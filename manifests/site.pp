@@ -1,5 +1,19 @@
 # Install our dependencies
 
+# ImageMagick
+# Mongo
+# phpMyAdmin
+# checkout master
+# setup master apache configs
+# migrate estimator database
+# setup code coverage
+# setup xhprof
+# setup bashrc and newproject
+# change newproject and closeproject to use sites-enabled/ubirimi
+# setup ssh key for github
+# setup xdebug and remote debugging
+
+
 exec { "apt-get update":
   path => "/usr/bin",
 }
@@ -174,6 +188,24 @@ exec { "create estimator database" :
   command => "/usr/bin/mysql -uroot -e \"create database if not exists estimator;\"",
   logoutput => on_failure,
   require => [Service["mysql"], Exec['drop existing estimator database']]
+}
+
+exec { "create estimator user" :
+  command => "/usr/bin/mysql -uroot -e \"CREATE USER 'estimator'@'localhost' IDENTIFIED BY 'estimator';\"",
+  logoutput => on_failure,
+  require => [Service["mysql"], Exec['create estimator database']]
+}
+
+exec { "grant estimator user permissions" :
+  command => "/usr/bin/mysql -uroot -e \"GRANT ALL PRIVILEGES ON *.* TO 'estimator'@'localhost' WITH GRANT OPTION;\"",
+  logoutput => on_failure,
+  require => [Service["mysql"], Exec['create estimator user']]
+}
+
+exec { "flush privileges" :
+  command => "/usr/bin/mysql -uroot -e \"FLUSH PRIVILEGES;\"",
+  logoutput => on_failure,
+  require => [Service["mysql"], Exec['grant estimator user permissions']]
 }
 
 # composer install
