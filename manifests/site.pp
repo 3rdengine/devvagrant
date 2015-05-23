@@ -1,7 +1,6 @@
 # Install our dependencies
 
 # ImageMagick
-# Mongo
 # checkout master
 # setup master apache configs
 # migrate estimator database
@@ -90,6 +89,11 @@ service { "mysql":
   require => Package["mysql-server"],
 }
 
+exec { "install mongodb":
+  command => "/usr/bin/apt-get install -y mongodb",
+  require => service['mysql']
+}
+
 package { ["php5-common",
           "libapache2-mod-php5",
           "php5-cli",
@@ -115,6 +119,11 @@ service { "apache2":
   ensure => "running",
   enable => true,
   require => Package["apache2"]
+}
+
+exec { 'install php mongo driver':
+	command => '/vagrant/manifests/assets/phpMongo.sh',
+	require => [Service['apache2'], Package['libapache2-mod-php5']],
 }
 
 package { ["git"]:
