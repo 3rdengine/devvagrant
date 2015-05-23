@@ -2,13 +2,11 @@
 
 # ImageMagick
 # Mongo
-# phpMyAdmin
 # checkout master
 # setup master apache configs
 # migrate estimator database
 # setup code coverage
 # setup xhprof
-# setup bashrc and newproject
 # change newproject and closeproject to use sites-enabled/ubirimi
 # setup ssh key for github
 # setup xdebug and remote debugging
@@ -54,8 +52,19 @@ exec { "apt-get update ppa:ondrej/apache2":
   require => [Exec["add-apt-repository ppa:ondrej/apache2"], Exec["add-apt-repository ppa:ondrej/php5"]],
 }
 
+exec { "add-apt-repository ppa:nijel/phpmyadmin":
+  command => "/usr/bin/add-apt-repository ppa:nijel/phpmyadmin",
+  require => Exec["apt-get update ppa:ondrej/apache2"]
+}
+
+exec { "apt-get update ppa:nijel/phpmyadmin":
+  command => "/usr/bin/apt-get update",
+  require => Exec["add-apt-repository ppa:nijel/phpmyadmin"]
+}
+
 package { "curl":
   ensure => present,
+  #require => Exec["apt-get update ppa:nijel/phpmyadmin"],
   require => Exec["apt-get update ppa:ondrej/apache2"],
 }
 
@@ -177,8 +186,20 @@ file { '/etc/php5/mods-available/xdebug.ini':
 #  notify  => Service["apache2"],
 #}
 
-# Setup the initial database
 
+# Setup Default BashRC
+exec { 'setup bashrc':
+	command => '/bin/cat /vagrant/manifests/assets/bashrc >> /etc/skel/.bashrc',
+	require => Service['apache2'],
+}
+
+# Create main user
+exec { 'create user':
+  command => '/vagrant/manifests/assets/createUser.sh',
+  require => Exec['setup bashrc'],
+}
+
+# Setup the initial database
 exec { "drop existing estimator database" :
   command => "/usr/bin/mysql -uroot -e \"drop database if exists estimator;\"",
   require => Service["mysql"],
@@ -207,6 +228,13 @@ exec { "flush privileges" :
   logoutput => on_failure,
   require => [Service["mysql"], Exec['grant estimator user permissions']]
 }
+
+# Install PHP My Admin
+exec { 'install phpmyadmin':
+  command => '/bin/bash /vagrant/manifests/assets/phpMyAdmin.sh',
+  require => [Exec['flush privileges'], Package['mysql-client']],
+}
+
 
 # composer install
 

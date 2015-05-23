@@ -1,0 +1,300 @@
+alias burpapache="sudo /etc/init.d/apache2 restart"
+
+
+function skip()
+{
+	NUMBEROFTIMES=5
+	if [[ $1 ]]; then
+		let NUMBEROFTIMES=$NUMBEROFTIMES*$1
+	fi
+	
+	for (( i=1; i <= $NUMBEROFTIMES; i++ ))
+	do
+		printf "\n"
+	done
+}
+
+################################################################################################################
+################################################################################################################
+##
+## Phinx
+##
+################################################################################################################
+################################################################################################################
+
+function phinxinit()
+{
+	vendor/robmorgan/phinx/bin/phinx init
+	cp ~/config/phinx.yml ./
+}
+
+function phinxcreate()
+{
+	vendor/robmorgan/phinx/bin/phinx create $1
+}
+
+
+################################################################################################################
+################################################################################################################
+##
+## Database Handling
+##
+################################################################################################################
+################################################################################################################
+
+function setdb()
+{
+	export DBNAME=$1
+	export DBUSER=$1
+	export DBPASS=$1
+	export DBHOST=localhost
+}
+
+function freezedb()
+{
+	mysqldump -u$DBUSER -p$DBPASS $DBNAME -h$DBHOST > ~/dumps/$1
+	gzip ~/dumps/$1
+}
+
+function cleardb()
+{
+	mysqldump -u$DBUSER -p$DBPASS --add-drop-table --no-data $DBNAME -h$DBHOST | grep -e '^DROP \| FOREIGN_KEY_CHECKS' | mysql -u$DBUSER -p$DBPASS $DBNAME -h$DBHOST
+}
+
+function restoredb()
+{
+	cleardb
+	zcat ~/dumps/$1.gz |mysql -u$DBUSER -p$DBPASS $DBNAME -h$DBHOST
+}
+
+function opendb()
+{
+	mysql -A -u$DBUSER -p$DBPASS $DBNAME -h$DBHOST
+}
+
+
+
+
+################################################################################################################
+################################################################################################################
+##
+## Engine Specific
+##
+################################################################################################################
+################################################################################################################
+
+function generatejs()
+{
+	move
+	php app/console soa:generatejsclasses $1 web/app/services/propelsoa
+}
+
+
+
+################################################################################################################
+################################################################################################################
+##
+## Project and Git
+##
+################################################################################################################
+################################################################################################################
+
+function setproject()
+{
+	export PROJECT=$1
+	move
+}
+
+function getproject()
+{
+	echo $PROJECT
+}
+
+function newproject()
+{
+	mkdir /var/www/estimator/$1
+	setproject $1
+
+	git clone https://github.com/latentcodex/estimator.git .
+	git branch $1
+	git checkout $1
+	
+	php composer.phar update
+
+	export TICKET=$(echo $1 |awk -F"_" '{print $1}')
+
+	cat /etc/apache2/sites-available/estimator.local.conf |sed "s/estimator.local/$TICKET.estimator.local/g" |sed "s/\/var\/www\/estimator/\/var\/www\/estimator\/$PROJECT\/dist/g" |sudo tee /etc/apache2/sites-available/$TICKET.estimator.local.conf > /dev/null
+
+	cat /etc/apache2/sites-available/estimator.web.local.conf |sed "s/web.estimator.local/$TICKET.web.estimator.local/g" |sed "s/\/var\/www\/estimator/\/var\/www\/estimator\/$PROJECT\/web/g" |sudo tee /etc/apache2/sites-available/$TICKET.web.estimator.local.conf > /dev/null
+
+	printf "Include /etc/apache2/sites-available/$TICKET.estimator.local.conf\n" |sudo tee --append /etc/apache2/apache2.conf
+	printf "Include /etc/apache2/sites-available/$TICKET.web.estimator.local.conf\n" |sudo tee --append /etc/apache2/apache2.conf
+	burpapache
+
+	sudo npm install
+	grunt dev
+}
+
+function closeproject()
+{
+	export TICKET=$(echo $1 |awk -F"_" '{print $1}')
+
+	sudo rm -fr /var/www/estimator/$1
+	sudo rm -fr /etc/apache2/sites-available/$TICKET.estimator.local.conf
+	sudo rm -fr /etc/apache2/sites-available/$TICKET.web.estimator.local.conf
+	
+	sed "/\/etc\/apache2\/sites-available\/$TICKET\.estimator\.local\.conf/d" /etc/apache2/apache2.conf |sudo tee /etc/apache2/apache2.conf > /dev/null
+	sed "/\/etc\/apache2\/sites-available\/$TICKET\.web\.estimator\.local\.conf/d" /etc/apache2/apache2.conf |sudo tee /etc/apache2/apache2.conf > /dev/null
+}
+
+function move()
+{
+	cd /var/www/estimator/$PROJECT
+}
+
+function findmod()
+{
+	git status |grep modified |grep -i $1 |awk '{print $3;}'
+}
+
+function findmod()
+{
+	git status |grep modified |grep -i $1 |awk '{print $3;}'
+}
+
+function findnew()
+{
+	git status |sed -n -e '/Untracked files/,$p' |tail -n+4 |grep -i $1 |awk '{print $2}'
+}
+
+function addmod()
+{
+	findmod $1 |xargs git add
+}
+
+function addnew()
+{
+	findnew $1 |xargs git add
+}
+
+function revertmod()
+{
+	findmod $1 |xargs git checkout
+}
+
+function rmnew()
+{
+	findnew $1 |xargs rm -fr
+}
+
+function diffmod()
+{
+	findmod $1 |xargs git diff
+}
+
+function listcommits()
+{
+	PROJECT=`getproject`
+	git log --pretty=oneline |grep -v Merge |awk '{print $1}'
+}
+
+function listfiles()
+{
+	COMMITS=`listcommits`
+	FILES=()
+
+	for COMMIT in $COMMITS
+	do
+		COMMITFILES=`git diff-tree --no-commit-id --name-only -r $COMMIT`
+		for COMMITFILE in $COMMITFILES
+		do
+			FILES=("${FILES[@]}" "$COMMITFILE")
+		done
+	done
+
+	echo ${FILES[@]} |sed 's/\s/\n/g' |sort |uniq
+}
+
+function checksyntax()
+{
+	FILES=$(listfiles)
+	for FILE in $FILES
+	do
+		echo $FILE |xargs php -l
+	done
+}
+
+function appperms()
+{
+	move
+	
+	if [ ! -d ./app/cache ]; then
+		mkdir ./app/cache
+	fi
+	
+	if [ ! -d ./app/logs ]; then
+		mkdir ./app/cache
+	fi
+	
+	sudo chmod -R 777 ./app/cache
+	sudo chmod -R 777 ./app/logs
+	
+	sudo chmod -R 777 /tmp
+}
+
+
+
+
+################################################################################################################
+################################################################################################################
+##
+## Unit Testing
+##
+################################################################################################################
+################################################################################################################
+
+
+function listtests()
+{
+	listfiles |grep Tests
+}
+
+function savetest()
+{
+	PROJECT=`getproject`
+	TESTFILE=`listtests |grep -i $1 |head -n1`
+	CLASSNAME=`cat $TESTFILE |grep "^\s*class" |awk '{print $2}'`
+
+	ENTRY="$PROJECT:$2:$CLASSNAME:$TESTFILE"
+	echo -e $ENTRY >> /home/tonyvance/unittestdata
+}
+
+function runtest()
+{
+	PROJECT=`getproject`
+	SEARCHSTRING="$PROJECT:$1:"
+
+	ENTRY=`cat /home/tonyvance/unittestdata |grep $SEARCHSTRING |head -n1`
+
+	CLASSNAME=`echo $ENTRY |awk -F ":" '{print $3}'`
+	FILEPATH=`echo $ENTRY |awk -F ":" '{print $4}'`
+
+	bin/ut $CLASSNAME $FILEPATH --tap
+}
+
+function coverage()
+{
+	move
+	php ./vendor/phpunit/phpunit/phpunit -c ./app/phpunit.xml --coverage-html /var/www/coverage
+}
+
+
+
+
+
+
+
+
+
+PERL_MB_OPT="--install_base \"/home/tonyvance/perl5\""; export PERL_MB_OPT;
+PERL_MM_OPT="INSTALL_BASE=/home/tonyvance/perl5"; export PERL_MM_OPT;
