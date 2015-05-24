@@ -123,12 +123,10 @@ function newproject()
 
 	export TICKET=$(echo $1 |awk -F"_" '{print $1}')
 
-	cat /etc/apache2/sites-available/estimator.local.conf |sed "s/estimator.local/$TICKET.estimator.local/g" |sed "s/\/var\/www\/estimator/\/var\/www\/estimator\/$PROJECT\/dist/g" |sudo tee /etc/apache2/sites-available/$TICKET.estimator.local.conf > /dev/null
+	cat /etc/apache2/sites-available/estimator.local.conf |sed "s/estimator.local/$TICKET.estimator.local/g" |sed "s/\/var\/www\/estimator/\/var\/www\/estimator\/$PROJECT\/dist/g" |sudo tee /etc/apache2/sites-enabled/$TICKET.estimator.local.conf > /dev/null
 
-	cat /etc/apache2/sites-available/estimator.web.local.conf |sed "s/web.estimator.local/$TICKET.web.estimator.local/g" |sed "s/\/var\/www\/estimator/\/var\/www\/estimator\/$PROJECT\/web/g" |sudo tee /etc/apache2/sites-available/$TICKET.web.estimator.local.conf > /dev/null
+	cat /etc/apache2/sites-available/estimator.web.local.conf |sed "s/web.estimator.local/$TICKET.web.estimator.local/g" |sed "s/\/var\/www\/estimator/\/var\/www\/estimator\/$PROJECT\/web/g" |sudo tee /etc/apache2/sites-enabled/$TICKET.web.estimator.local.conf > /dev/null
 
-	printf "Include /etc/apache2/sites-available/$TICKET.estimator.local.conf\n" |sudo tee --append /etc/apache2/apache2.conf
-	printf "Include /etc/apache2/sites-available/$TICKET.web.estimator.local.conf\n" |sudo tee --append /etc/apache2/apache2.conf
 	burpapache
 
 	sudo npm install
@@ -140,11 +138,8 @@ function closeproject()
 	export TICKET=$(echo $1 |awk -F"_" '{print $1}')
 
 	sudo rm -fr /var/www/estimator/$1
-	sudo rm -fr /etc/apache2/sites-available/$TICKET.estimator.local.conf
-	sudo rm -fr /etc/apache2/sites-available/$TICKET.web.estimator.local.conf
-	
-	sed "/\/etc\/apache2\/sites-available\/$TICKET\.estimator\.local\.conf/d" /etc/apache2/apache2.conf |sudo tee /etc/apache2/apache2.conf > /dev/null
-	sed "/\/etc\/apache2\/sites-available\/$TICKET\.web\.estimator\.local\.conf/d" /etc/apache2/apache2.conf |sudo tee /etc/apache2/apache2.conf > /dev/null
+	sudo rm -fr /etc/apache2/sites-enabled/$TICKET.estimator.local.conf
+	sudo rm -fr /etc/apache2/sites-enabled/$TICKET.web.estimator.local.conf
 }
 
 function move()

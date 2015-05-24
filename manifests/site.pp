@@ -131,7 +131,12 @@ package { ["git"]:
 }
 
 
-# Set up a new VirtualHost
+# Setup Apache and Initial Virtual Hosts
+
+exec { 'initial apache setup':
+	command => '/vagrant/manifests/assets/apacheSetup.sh',
+	require => [Service['apache2'], Exec['install php mongo driver']],
+}
 
 
 #file { "/etc/apache2/sites-available/ubirimi":
@@ -166,12 +171,12 @@ package { ["git"]:
 #}
 
 # Setup xdebug
-file { '/etc/php5/mods-available/xdebug.ini':
-  ensure => file,
-  source => '/vagrant/manifests/assets/xdebug.ini',
-  require => Package["apache2"],
-  notify  => Service["apache2"],
-}
+#file { '/etc/php5/mods-available/xdebug.ini':
+#  ensure => file,
+#  source => '/vagrant/manifests/assets/xdebug.ini',
+#  require => Package["apache2"],
+#  notify  => Service["apache2"],
+#}
 
 # Set Apache to run as the Vagrant user
 
