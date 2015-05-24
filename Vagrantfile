@@ -37,8 +37,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # the file default.pp in the manifests_path directory.
   #
   config.vm.provision "puppet" do |puppet|
+	puppet.module_path = "modules"
     puppet.manifests_path = "manifests"
     puppet.manifest_file = "site.pp"
+	puppet.hiera_config_path = "hiera/hiera.yaml"
     puppet.options = "--verbose"
   end
   
