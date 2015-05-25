@@ -133,6 +133,29 @@ function newproject()
 	grunt dev
 }
 
+function workonproject()
+{
+	mkdir /var/www/estimator/$1
+	setproject $1
+
+	git clone https://github.com/latentcodex/estimator.git .
+	git branch --track $1 origin/$1
+	git checkout $1
+	
+	php composer.phar update
+
+	export TICKET=$(echo $1 |awk -F"_" '{print $1}')
+
+	cat /etc/apache2/sites-available/estimator.local.conf |sed "s/estimator.local/$TICKET.estimator.local/g" |sed "s/\/var\/www\/estimator/\/var\/www\/estimator\/$PROJECT\/dist/g" |sudo tee /etc/apache2/sites-enabled/$TICKET.estimator.local.conf > /dev/null
+
+	cat /etc/apache2/sites-available/estimator.web.local.conf |sed "s/web.estimator.local/$TICKET.web.estimator.local/g" |sed "s/\/var\/www\/estimator/\/var\/www\/estimator\/$PROJECT\/web/g" |sudo tee /etc/apache2/sites-enabled/$TICKET.web.estimator.local.conf > /dev/null
+
+	burpapache
+
+	sudo npm install
+	grunt dev
+}
+
 function closeproject()
 {
 	export TICKET=$(echo $1 |awk -F"_" '{print $1}')
