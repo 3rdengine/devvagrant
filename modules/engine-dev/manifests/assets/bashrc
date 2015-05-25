@@ -151,6 +151,8 @@ function workonproject()
 	cat /etc/apache2/sites-available/estimator.web.local.conf |sed "s/web.estimator.local/$TICKET.web.estimator.local/g" |sed "s/\/var\/www\/estimator/\/var\/www\/estimator\/$PROJECT\/web/g" |sudo tee /etc/apache2/sites-enabled/$TICKET.web.estimator.local.conf > /dev/null
 
 	burpapache
+	
+	cp ~/config/phinx.yml ./
 
 	sudo npm install
 	grunt dev
@@ -172,12 +174,7 @@ function move()
 
 function findmod()
 {
-	git status |grep modified |grep -i $1 |awk '{print $3;}'
-}
-
-function findmod()
-{
-	git status |grep modified |grep -i $1 |awk '{print $3;}'
+	git status |grep modified |grep -i $1 |awk '{print $2;}'
 }
 
 function findnew()
