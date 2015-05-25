@@ -2,6 +2,8 @@ Exec { path => [ "/bin/", "/sbin/" , "/usr/bin/", "/usr/sbin/" ] }
 
 
 class { 'basic-stack':
+	username => hiera(username),
+	password => hiera(password),
 	mysql_root_password => hiera(mysql_root_password)
 }
 

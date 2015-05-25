@@ -1,4 +1,4 @@
-class basic-stack ($mysql_root_password) {
+class basic-stack ($username, $password, $mysql_root_password) {
 	exec  { 'initial_update':
 		command => 'apt-get update',
 		path => '/usr/bin',
@@ -122,6 +122,11 @@ class basic-stack ($mysql_root_password) {
 	
 	package { ['git']:
 		ensure => installed
+	}
+	
+	exec { 'install_samba':
+		command => "/bin/bash /vagrant/modules/basic-stack/manifests/assets/installSamba.sh ${username} ${password}",
+		require => exec['install_mongo_php_driver']
 	}
 	
 	exec { 'secure_mysql':
