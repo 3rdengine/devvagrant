@@ -1,4 +1,4 @@
-class basic-stack {
+class basic-stack ($mysql_root_password) {
 	exec  { 'initial_update':
 		command => 'apt-get update',
 		path => '/usr/bin',
@@ -60,6 +60,16 @@ class basic-stack {
 		require => exec['repository_update']
 	}
 	
+	exec { 'install_nodejs':
+		command => 'apt-get -y install nodejs',
+		require => exec['repository_update']
+	}
+	
+	exec { 'install_npm':
+		command => 'apt-get -y install npm',
+		require => exec['install_nodejs']
+	}
+	
 	service { 'mysql':
 		ensure  => running,
 		require => package['mysql-server'],
@@ -106,16 +116,37 @@ class basic-stack {
 	
 	exec { 'install_mongo_php_driver':
 		command => '/bin/bash /vagrant/modules/basic-stack/manifests/assets/phpMongo.sh',
-		require => [service['apache2'], package['libapache2-mod-php5'], exec['install_mongodb']],
+		require => [package['apache2'], package['libapache2-mod-php5'], exec['install_mongodb']],
+		notify => service['apache2'],
 	}
 	
 	package { ['git']:
 		ensure => installed
 	}
 	
+	exec { 'secure_mysql':
+		command => "mysqladmin -u root password ${mysql_root_password}",
+		require => package['mysql-server']
+	}
+	
 	exec { 'install_phpmyadmin':
 		command => '/bin/bash /vagrant/modules/basic-stack/manifests/assets/phpMyAdmin.sh',
 		require => [package['mysql-client'], package['mysql-server']],
 		notify => service['apache2'],
+	}
+	
+	exec { 'install_grunt':
+		command => 'npm install -g grunt-cli',
+		require => exec['install_npm']
+	}
+	
+	exec { 'install_bower':
+		command => 'npm install -g bower',
+		require => exec['install_grunt']
+	}
+	
+	exec { 'npm_path':
+		command => 'ln -s /usr/bin/nodejs /usr/bin/node',
+		require => exec['install_bower']
 	}
 }

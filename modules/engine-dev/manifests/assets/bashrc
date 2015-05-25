@@ -219,22 +219,39 @@ function checksyntax()
 	done
 }
 
-function appperms()
+function fixperms()
 {
-	move
+	sudo chown -R www-data:www-data /var/www
+	sudo chmod -R 775 /var/www
 	
-	if [ ! -d ./app/cache ]; then
-		mkdir ./app/cache
-	fi
+	cd /var/www
 	
-	if [ ! -d ./app/logs ]; then
-		mkdir ./app/cache
-	fi
-	
-	sudo chmod -R 777 ./app/cache
-	sudo chmod -R 777 ./app/logs
-	
-	sudo chmod -R 777 /tmp
+	for app in $(ls -l |grep "^d" | awk '{print $9}' |grep -v html) ; do
+		cd /var/www/$app
+		
+		for project in $(ls -l |grep "^d" | awk '{print $9}') ; do
+			cd /var/www/$app/$project
+			
+			
+			if [ ! -d ./app/cache ]; then
+				mkdir ./app/cache
+			fi
+			
+			if [ ! -d ./app/logs ]; then
+				mkdir ./app/cache
+			fi
+			
+			sudo chmod -R 777 ./app/cache
+			sudo chmod -R 777 ./app/logs
+			
+			sudo chmod -R 777 /tmp
+			
+		
+			cd /var/www/$app
+		done
+		
+		cd /var/www
+	done	
 }
 
 
