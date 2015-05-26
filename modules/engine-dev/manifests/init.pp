@@ -8,4 +8,9 @@ class engine-dev ($username) {
 		command => '/bin/bash /vagrant/modules/engine-dev/manifests/assets/coverage.sh',
 		require => service['apache2']
 	}
+	
+	exec { 'install_xdebug':
+		command => '/bin/bash /vagrant/modules/engine-dev/manifests/assets/installXdebug.sh',
+		require => exec['setup_coverage']
+	}
 }
