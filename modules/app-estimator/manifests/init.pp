@@ -1,7 +1,7 @@
 class app-estimator ($github_username, $github_password, $username) {
 	exec { 'estimator_db_setup':
 		command => '/bin/bash /vagrant/modules/app-estimator/manifests/assets/dbSetup.sh',
-		require => [service['mysql'], exec['install_phpmyadmin']]
+		require => [service['mysql'], exec['install_phpmyadmin'], exec['install_mongodb']]
 	}
 	
 	exec { 'place_conf_templates':
