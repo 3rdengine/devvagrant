@@ -156,6 +156,8 @@ function workonproject()
 
 	sudo npm install
 	grunt dev
+	
+	move
 }
 
 function closeproject()
