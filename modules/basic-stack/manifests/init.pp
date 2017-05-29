@@ -18,12 +18,12 @@ class basic-stack ($username, $password, $mysql_root_password) {
 #		require => package['python-software-properties']
 #	}
 #	
-#	exec { 'repository_update':
-#		command => '/usr/bin/apt-get update',
+	exec { 'repository_update':
+		command => '/usr/bin/apt-get update',
 #		require => [
 #			exec['ondrej_php5'], exec['ondrej_mysql56'], exec['ondrej_apache2'], exec['nijel_phpmyadmin']
 #		]
-#	}
+	}
 
 
 	#########################################################################################
@@ -43,38 +43,54 @@ class basic-stack ($username, $password, $mysql_root_password) {
 		ensure => installed,
 		require => exec['repository_update']
 	}
-	
-	exec { 'install_nodejs':
-		command => 'apt-get -y install nodejs',
+
+	package { ['libssl-dev', 'libsslcommon2-dev', 'pkg-config']:
+		ensure => installed,
 		require => exec['repository_update']
 	}
-	
-	exec { 'install_npm':
-		command => 'apt-get -y install npm',
-		require => exec['install_nodejs']
+
+	exec { 'pre_install_nodejs':
+		command => 'curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -',
+		require => package['curl']
 	}
-	
+
+	exec { 'install_nodejs':
+		command => 'sudo apt-get install -y nodejs',
+		require => exec['pre_install_nodejs']
+	}
+
 	service { 'mysql':
 		ensure  => running,
 		require => package['mysql-server'],
 	}
 	
+	exec { 'pre_install_mongodb':
+		command => 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6',
+		require => exec['repository_update']
+	}
+	exec { 'pre_install_mongodb2':
+		command => 'echo "deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.4.list',
+		require => exec['pre_install_mongodb']
+	}
+	exec { 'mongo_update':
+		command => 'sudo /usr/bin/apt-get update',
+		require => [ exec['pre_install_mongodb2'] ]
+	}
 	exec { 'install_mongodb':
-		command => '/usr/bin/apt-get install -y mongodb',
-		require => service['mysql']
+		command => '/usr/bin/apt-get install -y mongodb-org',
+		require => [service['mysql'],exec['mongo_update']]
 	}
 	
 	package { 
 		[
-			'php5-common', 
-			'libapache2-mod-php5',
-			'php5-cli',
-#			'php-apc',
-			'php5-mysql',
-			'php5-gd',
-			'php5-mysqlnd',
-			'php5-curl',
-#			'php5-xdebug'
+			'php-common',
+			'libapache2-mod-php',
+			'php-cli',
+			'php-mysql',
+			'php-gd',
+			'php-mysqlnd',
+			'php-curl',
+			'php-xdebug'
 		]:
 		ensure => installed,
 		notify => service['apache2'],
@@ -83,7 +99,7 @@ class basic-stack ($username, $password, $mysql_root_password) {
 	
 	exec { 'install_composer':
 		command => '/usr/bin/curl -sS https://getcomposer.org/installer | php && sudo mv composer.phar /usr/local/bin/composer',
-		require => [package['curl'], package['php5-common'], package['php5-cli']],
+		require => [package['curl'], package['php-common'], package['php-cli']],
 	}
 	
 	exec { '/usr/sbin/a2enmod rewrite' :
@@ -100,10 +116,15 @@ class basic-stack ($username, $password, $mysql_root_password) {
 	
 	exec { 'install_mongo_php_driver':
 		command => '/bin/bash /vagrant/modules/basic-stack/manifests/assets/phpMongo.sh',
-		require => [package['apache2'], package['libapache2-mod-php5'], exec['install_mongodb']],
+		require => [package['apache2'], package['libssl-dev'], exec['install_mongodb']],
 		notify => service['apache2'],
 	}
-	
+	exec { 'install_mysql_safe_mode_off':
+		command => '/bin/bash /vagrant/modules/basic-stack/manifests/assets/mysql_safe_mode_off.sh',
+		require => [package['apache2'], package['mysql-server'], package['mysql-client']]
+		notify => service['apache2'],
+	}
+
 	package { ['git']:
 		ensure => installed
 	}
