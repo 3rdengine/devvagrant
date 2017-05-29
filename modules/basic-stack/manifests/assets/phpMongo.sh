@@ -4,7 +4,7 @@ sudo phpenmod mongodb
 mongo <<END
 db.createUser({user:"admin",pwd:"whoFledu",roles:[{role:'userAdminAnyDatabase',db:'admin'}]});
 END
-sudo echo 'security.authentication: enabled' >>/etc/mongod.conf
+sudo echo 'security.authorization: enabled' >>/etc/mongod.conf
 sudo service mongod restart
 mongo <<END
 use lightspark

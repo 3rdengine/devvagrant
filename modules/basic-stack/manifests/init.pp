@@ -121,7 +121,7 @@ class basic-stack ($username, $password, $mysql_root_password) {
 	}
 	exec { 'install_mysql_safe_mode_off':
 		command => '/bin/bash /vagrant/modules/basic-stack/manifests/assets/mysql_safe_mode_off.sh',
-		require => [package['apache2'], package['mysql-server'], package['mysql-client']]
+		require => [package['apache2'], package['mysql-server'], package['mysql-client']],
 		notify => service['apache2'],
 	}
 
@@ -147,7 +147,7 @@ class basic-stack ($username, $password, $mysql_root_password) {
 	
 	exec { 'install_grunt':
 		command => 'npm install -g grunt-cli',
-		require => exec['install_npm']
+		require => exec['install_nodejs']
 	}
 	
 	exec { 'install_bower':

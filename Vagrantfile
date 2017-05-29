@@ -26,7 +26,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Forward MySql port on 33066, used for connecting admin-clients to localhost:33066
   config.vm.network "forwarded_port", guest: 3306, host: 33066
   # Forward http port on 8080, used for connecting web browsers to localhost:8080
-  config.vm.network "forwarded_port", guest: 80, host: 8080
+  config.vm.network "forwarded_port", guest: 80, host: 8088
 
   config.ssh.password = "vagrant"
   config.ssh.forward_agent = true
@@ -36,6 +36,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # You will need to create the manifests directory and a manifest in
   # the file default.pp in the manifests_path directory.
   #
+  config.vm.provision "shell", inline: "sudo apt-get install -y puppet"
+
   config.vm.provision "puppet" do |puppet|
 	puppet.module_path = "modules"
     puppet.manifests_path = "manifests"
