@@ -6,7 +6,6 @@ class basic-stack ($username, $password, $mysql_root_password) {
 	
 	package { 'python-software-properties':
 		ensure => present,
-		before => exec['ondrej_php5'],
 		require => exec['initial_update'],
 	}
 	
@@ -14,32 +13,17 @@ class basic-stack ($username, $password, $mysql_root_password) {
 	#########################################################################################
 	## Include PPAs
 	
-	exec { 'ondrej_php5':
-		command => '/usr/bin/add-apt-repository ppa:ondrej/php5',
-		require => package['python-software-properties']
-	}
-	
-	exec { 'ondrej_mysql56':
-		command => '/usr/bin/add-apt-repository ppa:ondrej/mysql-5.6',
-		require => package['python-software-properties']
-	}
-	
-	exec { 'ondrej_apache2':
-		command => '/usr/bin/add-apt-repository ppa:ondrej/apache2',
-		require => package['python-software-properties']
-	}
-	
-	exec { 'nijel_phpmyadmin':
-		command => '/usr/bin/add-apt-repository ppa:nijel/phpmyadmin',
-		require => package['python-software-properties']
-	}
-	
-	exec { 'repository_update':
-		command => '/usr/bin/apt-get update',
-		require => [
-			exec['ondrej_php5'], exec['ondrej_mysql56'], exec['ondrej_apache2'], exec['nijel_phpmyadmin']
-		]
-	}
+#	exec { 'ondrej_php5':
+#		command => '/usr/bin/add-apt-repository ppa:ondrej/php5',
+#		require => package['python-software-properties']
+#	}
+#	
+#	exec { 'repository_update':
+#		command => '/usr/bin/apt-get update',
+#		require => [
+#			exec['ondrej_php5'], exec['ondrej_mysql56'], exec['ondrej_apache2'], exec['nijel_phpmyadmin']
+#		]
+#	}
 
 
 	#########################################################################################
